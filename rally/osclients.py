@@ -400,6 +400,16 @@ class Ceilometer(OSClient):
             **self._get_auth_info(project_name_key="tenant_name"))
         return client
 
+@configure("gnocchi", default_service_type="metric", default_version="1")
+class Gnocchi(OSClient):
+    def create_client(self, version=None, service_type=None):
+        """Return gnocchi client."""
+        from gnocchiclient.v1 import client as gnocchi
+        version = self.choose_version(version)
+        api_url = self._get_endpoint(service_type)
+        api_url += "v%s" % version
+        session = self._get_session(endpoint=api_url)
+        return gnocchi.Client(session=session, service_type=service_type)
 
 @configure("ironic", default_version="1", default_service_type="baremetal",
            supported_versions=["1"])
