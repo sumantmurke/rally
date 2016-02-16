@@ -82,16 +82,14 @@ class TempestConfigTestCase(test.TestCase):
         self.assertRaises(exceptions.TempestConfigCreationFailure,
                           self.tempest_conf._download_cirros_image)
 
-    def test__get_service_url(self):
-        self.tempest_conf.keystone.auth_ref = {
-            "serviceCatalog": [
-                {
-                    "name": "test_service",
-                    "type": "test_service_type",
-                    "endpoints": [{"publicURL": "test_url"}]
-                }
-            ]
-        }
+    @ddt.data({"publicURL": "test_url"},
+              {"interface": "public", "url": "test_url"})
+    def test__get_service_url(self, endpoint):
+        mock_catalog = mock.MagicMock()
+        mock_catalog.get_endpoints.return_value = {
+            "test_service_type": [endpoint]}
+
+        self.tempest_conf.keystone.service_catalog = mock_catalog
         self.tempest_conf.clients.services.return_value = {
             "test_service_type": "test_service"}
         self.assertEqual(
@@ -150,6 +148,7 @@ class TempestConfigTestCase(test.TestCase):
             ("admin_tenant_name", CREDS["admin"]["username"]),
             ("admin_domain_name", CREDS["admin"]["admin_domain_name"]),
             ("region", CREDS["admin"]["region_name"]),
+            ("auth_version", "v2"),
             ("uri", CREDS["admin"]["auth_url"]),
             ("uri_v3", CREDS["admin"]["auth_url"].replace("/v2.0/", "/v3")),
             ("disable_ssl_certificate_validation",
@@ -397,14 +396,40 @@ class TempestResourcesContextTestCase(test.TestCase):
         result = self.context.conf.get("compute", "flavor_ref")
         self.assertEqual("id1", result)
 
-    @mock.patch("six.moves.builtins.open")
-    def test__create_image(self, mock_open):
+    @mock.patch("rally.plugins.openstack.wrappers.glance.wrap")
+    def test__discover_or_create_image_when_image_exists(self, mock_wrap):
         client = self.context.clients.glance()
-        client.images.create.side_effect = [fakes.FakeImage(id="id1")]
+        client.images.list.return_value = [fakes.FakeResource(name="CirrOS",
+                                                              status="active")]
+        image = self.context._discover_or_create_image()
+        self.assertEqual("CirrOS", image.name)
+        self.assertEqual(0, len(self.context._created_images))
 
-        image = self.context._create_image()
-        self.assertEqual("id1", image.id)
-        self.assertEqual("id1", self.context._created_images[0].id)
+    # @mock.patch("six.moves.builtins.open")
+    # def test__discover_or_create_image(self, mock_wrap, mock_open):
+    #     client = self.context.clients.glance()
+    #     client.images.create.side_effect = [fakes.FakeImage(id="id1")]
+
+    #     image = self.context._discover_or_create_image()
+    #     self.assertEqual("id1", image.id)
+    #     self.assertEqual("id1", self.context._created_images[0].id)
+
+    @mock.patch("rally.plugins.openstack.wrappers.glance.wrap")
+    def test__discover_or_create_image(self, mock_wrap):
+        client = mock_wrap.return_value
+
+        image = self.context._discover_or_create_image()
+        self.assertEqual(image, client.create_image.return_value)
+        self.assertEqual(self.context._created_images[0],
+                         client.create_image.return_value)
+        mock_wrap.assert_called_once_with(self.context.clients.glance,
+                                          self.context)
+        client.create_image.assert_called_once_with(
+            container_format=CONF.image.container_format,
+            image_location=mock.ANY,
+            disk_format=CONF.image.disk_format,
+            name=mock.ANY,
+            is_public=True)
 
     def test__create_flavor(self):
         client = self.context.clients.nova()

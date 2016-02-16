@@ -165,8 +165,8 @@ def first_index(lst, predicate):
     :returns: the index of the first matching element or None if no element
               matches the predicate.
     """
-    for i in range(len(lst)):
-        if predicate(lst[i]):
+    for i, e in enumerate(lst):
+        if predicate(e):
             return i
     return None
 
@@ -518,7 +518,7 @@ def timeout_thread(queue):
 
     all_threads = collections.deque()
     while True:
-        if len(all_threads) == 0:
+        if not all_threads:
             timeout = None
         else:
             thread_ident, deadline = all_threads[0]
