@@ -427,17 +427,20 @@ class Gnocchi(OSClient):
         #print auth
         #session = loading.load_session_from_argparse_arguments(auth)
         #print session
-        from keystoneauth1.identity import v3
+        from keystoneauth1.identity import v2
         from keystoneauth1 import session
+
         import rpdb2; rpdb2.start_embedded_debugger("sumant")
         auth_url =  self.credential.auth_url
         print auth_url
-        auth = v3.Password(auth_url="http://104.130.253.176:5000/v3",
+        auth = v2.Password(auth_url="http://104.130.253.176:5000/v2.0",
             username=self.credential.username,
             password=self.credential.password,
-            user_domain_name='default',
-            project_id='cf7bc08a137f4126a074b955a4dc205e')
+            #user_domain_name=self.credential.user_domain_name,
+            #project_name=self.credential.tenant_name)
+            tenant_name = self.credential.tenant_name)
         sess = session.Session(auth = auth)
+
         gclient = gnocchi.Client(session=sess)
         lis = gclient.archive_policy_rule.list()
         print lis
