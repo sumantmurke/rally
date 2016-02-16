@@ -144,13 +144,12 @@ class OSClient(plugin.Plugin):
         return keystone(*args, **kwargs)
 
     def _get_session(self, auth=None, endpoint=None):
-        endpoint = endpoint or self._get_endpoint()
-
         from keystoneclient.auth import token_endpoint
         from keystoneclient import session as ks_session
 
-        kc = self.keystone()
         if auth is None:
+            endpoint = endpoint or self._get_endpoint()
+            kc = self.keystone()
             auth = token_endpoint.Token(endpoint, kc.auth_token)
 
         return ks_session.Session(auth=auth, verify=self.credential.insecure,
@@ -167,7 +166,10 @@ class OSClient(plugin.Plugin):
     def _get_auth_info(self, user_key="username",
                        password_key="password",
                        auth_url_key="auth_url",
-                       project_name_key="project_id"
+                       project_name_key="project_id",
+                       domain_name_key="domain_name",
+                       user_domain_name_key="user_domain_name",
+                       project_domain_name_key="project_domain_name"
                        ):
         kw = {
             user_key: self.credential.username,
@@ -176,6 +178,15 @@ class OSClient(plugin.Plugin):
         }
         if project_name_key:
             kw.update({project_name_key: self.credential.tenant_name})
+
+        if "v2.0" not in self.credential.auth_url:
+            kw.update({
+                domain_name_key: self.credential.domain_name})
+            kw.update({
+                user_domain_name_key: self.credential.user_domain_name})
+            kw.update({
+                project_domain_name_key: self.credential.project_domain_name})
+
         return kw
 
     @abc.abstractmethod
@@ -202,20 +213,22 @@ class Keystone(OSClient):
         raise exceptions.RallyException(_("Method 'keystone' is restricted "
                                           "for keystoneclient. :)"))
 
-    @staticmethod
-    def _create_keystone_client(args):
-        from keystoneclient import discover as keystone_discover
-        discover = keystone_discover.Discover(**args)
-        for version_data in discover.version_data():
-            version = version_data["version"]
-            if version[0] <= 2:
-                from keystoneclient.v2_0 import client as keystone_v2
-                return keystone_v2.Client(**args)
-            elif version[0] == 3:
-                from keystoneclient.v3 import client as keystone_v3
-                return keystone_v3.Client(**args)
-        raise exceptions.RallyException("Failed to discover keystone version "
-                                        "for url %(auth_url)s.", **args)
+    def _create_keystone_client(self, args):
+        from keystoneclient.auth import identity
+        from keystoneclient import client
+        auth_arg_list = [
+            "username", "project_name", "tenant_name", "auth_url",
+            "password",
+        ]
+        # NOTE(bigjools): If forcing a v2.0 URL then you cannot specify
+        # domain-related info, or the service discovery will fail.
+        if "v2.0" not in args["auth_url"]:
+            auth_arg_list.extend(
+                ["user_domain_name", "domain_name", "project_domain_name"])
+        auth_args = {key: args.get(key) for key in auth_arg_list}
+        auth = identity.Password(**auth_args)
+        args["session"] = self._get_session(auth=auth)
+        return client.Client(**args)
 
     def create_client(self):
         """Return keystone client."""

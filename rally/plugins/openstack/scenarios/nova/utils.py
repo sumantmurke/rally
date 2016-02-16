@@ -801,10 +801,10 @@ class NovaScenario(scenario.OpenStackScenario):
         action_name = ("nova.create_%s_rules" % (rules_per_security_group *
                                                  len(security_groups)))
         with atomic.ActionTimer(self, action_name):
-            for i in range(len(security_groups)):
+            for i, security_group in enumerate(security_groups):
                 for j in range(rules_per_security_group):
                         self.clients("nova").security_group_rules.create(
-                            security_groups[i].id,
+                            security_group.id,
                             from_port=(i * rules_per_security_group + j + 1),
                             to_port=(i * rules_per_security_group + j + 1),
                             ip_protocol=ip_protocol,
@@ -892,3 +892,14 @@ class NovaScenario(scenario.OpenStackScenario):
         :param net_id: The nova-network ID to delete
         """
         return self.admin_clients("nova").networks.delete(net_id)
+
+    @atomic.action_timer("nova.list_flavors")
+    def _list_flavors(self, detailed=True, **kwargs):
+        """List all flavors.
+
+        :param kwargs: Optional additional arguments for flavor listing
+        :param detailed: True if the image listing
+                         should contain detailed information
+        :returns: flavors list
+        """
+        return self.clients("nova").flavors.list(detailed, **kwargs)

@@ -344,8 +344,8 @@ class Tempest(object):
                 "testr_args": testr_args,
                 "log_file": log_file or self.log_file_raw
             })
-        # Create all resources needed for Tempest before running tests.
-        # Once tests finish, all created resources will be deleted.
+        # Discover or create all resources needed for Tempest before running
+        # tests. Once tests finish, all created resources will be deleted.
         with config.TempestResourcesContext(
                 self.deployment, self.verification, self.config_file):
             # Run tests
@@ -354,23 +354,16 @@ class Tempest(object):
                                   env=self.env, shell=True)
 
     def discover_tests(self, pattern=""):
-        """Return a set of discovered tests which match given pattern."""
+        """Get a list of discovered tests.
 
+        :param pattern: Test name pattern which can be used to match
+        """
         cmd = [self.venv_wrapper, "testr", "list-tests", pattern]
         raw_results = subprocess.Popen(
             cmd, cwd=self.path(), env=self.env,
             stdout=subprocess.PIPE).communicate()[0]
-
-        tests = set()
-        for test in raw_results.split("\n"):
-            if test.startswith("tempest."):
-                index = test.find("[")
-                if index != -1:
-                    tests.add(test[:index])
-                else:
-                    tests.add(test)
-
-        return tests
+        index = raw_results.find("tempest.")
+        return raw_results[index:].split()
 
     def parse_results(self, log_file=None, expected_failures=None):
         """Parse subunit raw log file."""
