@@ -405,11 +405,37 @@ class Gnocchi(OSClient):
     def create_client(self, version=None, service_type=None):
         """Return gnocchi client."""
         from gnocchiclient.v1 import client as gnocchi
-        version = self.choose_version(version)
-        api_url = self._get_endpoint(service_type)
-        api_url += "v%s" % version
-        session = self._get_session(endpoint=api_url)
-        return gnocchi.Client(session=session, service_type=service_type)
+        #version = self.choose_version(version)
+        #api_url = self._get_endpoint(service_type)
+        #api_url += "/v%s" % version
+        #test part start
+        from keystoneauth1 import loading
+        #auth = loading.load_auth_from_argparse_arguments(_NAMESPACE)
+        #print auth
+        #session = loading.load_session_from_argparse_arguments(auth)
+        #print session
+        from keystoneauth1.identity import v3
+        from keystoneauth1 import session
+        import rpdb2; rpdb2.start_embedded_debugger("sumant")
+        auth_url =  self.credential.auth_url
+        print auth_url
+        auth = v3.Password(auth_url="http://104.130.253.176:5000/v3",
+            username=self.credential.username,
+            password=self.credential.password,
+            user_domain_name='default',
+            project_id='cf7bc08a137f4126a074b955a4dc205e')
+        sess = session.Session(auth = auth)
+        gclient = gnocchi.Client(session=sess)
+        lis = gclient.archive_policy_rule.list()
+        print lis
+        #test part end
+        #print api_url
+        #session = self._get_session(endpoint=api_url)
+        #return gnocchi.Client(session=session, service_type=service_type)
+        #test start
+
+        return gclient
+
 
 @configure("ironic", default_version="1", default_service_type="baremetal",
            supported_versions=["1"])
