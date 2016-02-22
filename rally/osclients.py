@@ -419,6 +419,7 @@ class Gnocchi(OSClient):
         """Return gnocchi client."""
         from keystoneauth1.identity import v3
         from keystoneauth1 import session
+        from gnocchiclient.v1 import client as gnocchi
 
         import rpdb2; rpdb2.start_embedded_debugger("sumant")
         auth = v3.Password(auth_url="http://104.130.253.176:5000/v3",
