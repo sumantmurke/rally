@@ -14,3 +14,13 @@ class GnocchiScenario(scenario.OpenStackScenario):
         :returns: list of all metrics
         """
         self.clients("gnocchi").metric.list()
+
+
+    @atomic.action_timer("gnocchi.list_resources")
+    def _list_resources(self):
+        """Get list of resources from gnocchi api
+        :returns: list of all resources
+        """
+
+        lis = self.clients("gnocchi").resource.list()
+        print lis
