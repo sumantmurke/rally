@@ -1,0 +1,18 @@
+{
+    "type": "ExistingCloud",
+    "auth_url": "http://104.130.253.176:5000/v2.0/",
+    "region_name": "RegionOne",
+    "endpoint_type": "public",
+    "admin": {
+        "username": "admin",
+        "password": "secrete",
+        "tenant_name": "admin"
+    },
+    "users":[
+        {
+            "username":"admin",
+            "password":"secrete",
+            "tenant_name":"demo "
+        }
+    ]
+}

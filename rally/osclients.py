@@ -433,6 +433,12 @@ class Gnocchi(OSClient):
         gclient = gnocchi.Client(session=sess)
         lis = gclient.archive_policy_rule.list()
         print lis
+        #metric_dict={'name':'test',
+            #'archive_policy_name':'low'}
+        #new_metric= gclient.metric.create(metric_dict)
+        #print new_metric
+        mlist= gclient.metric.list()
+        print mlist
         return gclient
 
 
