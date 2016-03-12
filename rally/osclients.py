@@ -437,8 +437,10 @@ class Gnocchi(OSClient):
             #'archive_policy_name':'low'}
         #new_metric= gclient.metric.create(metric_dict)
         #print new_metric
-        mlist= gclient.metric.list()
-        print mlist
+        #resource = gclient.resource.list()
+        #print resource
+        #mlist= gclient.metric.list()
+        #print mlist
         return gclient
 
 

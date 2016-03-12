@@ -24,3 +24,42 @@ class GnocchiScenario(scenario.OpenStackScenario):
 
         lis = self.clients("gnocchi").resource.list()
         print lis
+
+    @atomic.action_timer("gnocchi.metrics_mean")
+    def _aggregate_metrics(self,project_id,metric_name):
+        """query for aggregating metrics"""
+        metric_list =  []
+        aggregation_type="mean"
+        query = self._build_query(project_id, metric_name, aggregation_type)
+        prj_id  = query.get('project_id')
+        resource_list = self._search_resource(prj_id)
+        for resource in resource_list:
+            metric_dict = resource.get('metrics')
+            if metric_dict.has_key(metric_name):
+                metric_list.append(metric_dict.get(metric_name))
+                print metric_list
+
+        agg = self.clients("gnocchi").metric.aggregation(metrics = metric_list, query=None, aggregation = aggregation_type)
+        print agg
+
+    def _build_query(self,project_id, metric_name, aggregation_type):
+
+        query = {}
+
+        if project_id:
+            query['project_id'] = project_id
+        if metric_name:
+            query['metric_name'] = metric_name
+        if aggregation_type:
+            query['aggregation_type'] = aggregation_type
+        else:
+            query['aggregation_type'] = "mean"
+
+        return query
+
+    def _search_resource(self, prj_id):
+
+        query = {"=":{"project_id": prj_id} }
+        resources = self.clients("gnocchi").resource.search(query=query)
+        print resources
+        return resources

@@ -1,0 +1,20 @@
+{
+    "GnocchiQuery.aggregate_metrics": [
+        {
+            "runner": {
+                "type": "constant",
+                "times": 1,
+                "concurrency": 1
+            },
+            "context": {
+                },
+
+            "args":{
+                "project_id":"2229364312b04c24a3bc8d86d87a37e9",
+                "metric_name":"cpu_util"
+                }
+            }
+    ]
+}
+
+
