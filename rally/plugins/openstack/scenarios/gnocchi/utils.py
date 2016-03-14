@@ -26,18 +26,19 @@ class GnocchiScenario(scenario.OpenStackScenario):
         print lis
 
     @atomic.action_timer("gnocchi.metrics_mean")
-    def _aggregate_metrics(self,project_id,metric_name):
+    def _aggregate_metrics(self,metric_name,aggregation_type):
         """query for aggregating metrics"""
+        import rpdb2; rpdb2.start_embedded_debugger("sumant")
+        project_id = self.context["tenant"]["id"]
+        print project_id
         metric_list =  []
-        aggregation_type="mean"
-        query = self._build_query(project_id, metric_name, aggregation_type)
-        prj_id  = query.get('project_id')
-        resource_list = self._search_resource(prj_id)
+        resource_list = self._search_resource(project_id)
         for resource in resource_list:
             metric_dict = resource.get('metrics')
             if metric_dict.has_key(metric_name):
                 metric_list.append(metric_dict.get(metric_name))
                 print metric_list
+                print " "
 
         agg = self.clients("gnocchi").metric.aggregation(metrics = metric_list, query=None, aggregation = aggregation_type)
         print agg

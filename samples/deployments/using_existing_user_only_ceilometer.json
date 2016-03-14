@@ -1,0 +1,19 @@
+{
+    "type": "ExistingCloud",
+    "auth_url": "http://23.253.72.148:5000/v2.0/",
+    "region_name": "RegionOne",
+    "endpoint_type": "public",
+    "admin": {
+        "username": "admin",
+        "password": "nomoresecrete",
+        "tenant_name": "admin"
+    },
+    "users":[
+        {
+            "username":"admin",
+            "password":"nomoresecrete",
+            "tenant_name":"admin"
+        }
+    ]
+}
+

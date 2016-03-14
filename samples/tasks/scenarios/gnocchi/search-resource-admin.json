@@ -10,8 +10,8 @@
                 },
 
             "args":{
-                "project_id":"2229364312b04c24a3bc8d86d87a37e9",
-                "metric_name":"cpu_util"
+                "metric_name":"cpu_util",
+                "aggregation_type":"mean"
                 }
             }
     ]
