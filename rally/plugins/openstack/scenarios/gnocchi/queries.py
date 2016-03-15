@@ -13,8 +13,9 @@ class GnocchiQuery(gnocchiutils.GnocchiScenario):
         """Aggregate metrics by calculating mean of a specific metric type"""
 
         import rpdb2; rpdb2.start_embedded_debugger("sumant")
-        print "inside metrics mean"
-        self._aggregate_metrics(metric_name,aggregation_type)
+
+        resource_list = self._search_resource()
+        self._aggregate_metrics(metric_name, aggregation_type, resource_list)
 
 
 

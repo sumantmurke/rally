@@ -23,25 +23,19 @@ class GnocchiScenario(scenario.OpenStackScenario):
         """
 
         lis = self.clients("gnocchi").resource.list()
-        print lis
 
     @atomic.action_timer("gnocchi.metrics_mean")
-    def _aggregate_metrics(self,metric_name,aggregation_type):
-        """query for aggregating metrics"""
-        import rpdb2; rpdb2.start_embedded_debugger("sumant")
-        project_id = self.context["tenant"]["id"]
-        print project_id
+    def _aggregate_metrics(self, metric_name, aggregation_type, resource_list):
+        """query for aggregating list of metrics"""
+
         metric_list =  []
-        resource_list = self._search_resource(project_id)
         for resource in resource_list:
             metric_dict = resource.get('metrics')
             if metric_dict.has_key(metric_name):
                 metric_list.append(metric_dict.get(metric_name))
-                print metric_list
-                print " "
 
-        agg = self.clients("gnocchi").metric.aggregation(metrics = metric_list, query=None, aggregation = aggregation_type)
-        print agg
+        self.clients("gnocchi").metric.aggregation(
+            metrics=metric_list, query=None, aggregation=aggregation_type)
 
     def _build_query(self,project_id, metric_name, aggregation_type):
 
@@ -58,9 +52,9 @@ class GnocchiScenario(scenario.OpenStackScenario):
 
         return query
 
-    def _search_resource(self, prj_id):
+    def _search_resource(self):
 
-        query = {"=":{"project_id": prj_id} }
-        resources = self.clients("gnocchi").resource.search(query=query)
-        print resources
-        return resources
+        project_id=self.context["tenant"]["id"]
+        query={"=":{"project_id": project_id} }
+        return self.clients("gnocchi").resource.search(query=query)
+

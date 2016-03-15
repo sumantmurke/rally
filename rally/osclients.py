@@ -417,12 +417,15 @@ class Ceilometer(OSClient):
 class Gnocchi(OSClient):
     def create_client(self, version=None, service_type=None):
         """Return gnocchi client."""
+
+        #NOTE(sumantmurke): gnocchiclient requires keystoneauth1 for
+        # authenticating and creating a session. Use V3 keystone endpoint.
         from keystoneauth1.identity import v3
         from keystoneauth1 import session
         from gnocchiclient.v1 import client as gnocchi
 
         import rpdb2; rpdb2.start_embedded_debugger("sumant")
-        auth = v3.Password(auth_url="http://104.130.253.176:5000/v3",
+        auth = v3.Password(auth_url=self.credential.auth_url,
             username=self.credential.username,
             password=self.credential.password,
             user_domain_name=self.credential.user_domain_name,
@@ -431,16 +434,8 @@ class Gnocchi(OSClient):
         sess = session.Session(auth = auth)
 
         gclient = gnocchi.Client(session=sess)
-        lis = gclient.archive_policy_rule.list()
-        print lis
-        #metric_dict={'name':'test',
-            #'archive_policy_name':'low'}
-        #new_metric= gclient.metric.create(metric_dict)
-        #print new_metric
-        #resource = gclient.resource.list()
-        #print resource
-        #mlist= gclient.metric.list()
-        #print mlist
+        #lis = gclient.archive_policy_rule.list()
+        #print lis
         return gclient
 
 
