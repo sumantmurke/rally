@@ -413,6 +413,28 @@ class Ceilometer(OSClient):
             **self._get_auth_info(project_name_key="tenant_name"))
         return client
 
+@configure("gnocchi", default_service_type="metric", default_version="1")
+class Gnocchi(OSClient):
+    def create_client(self, version=None, service_type=None):
+        """Return gnocchi client."""
+
+        #NOTE(sumantmurke): gnocchiclient requires keystoneauth1 for
+        # authenticating and creating a session. Using V3 keystone endpoint.
+        from keystoneauth1.identity import v3
+        from keystoneauth1 import session
+        from gnocchiclient.v1 import client as gnocchi
+
+        auth = v3.Password(auth_url=self.credential.auth_url,
+            username=self.credential.username,
+            password=self.credential.password,
+            user_domain_name=self.credential.user_domain_name,
+            project_name=self.credential.tenant_name,
+            project_domain_id='default')
+        sess = session.Session(auth = auth)
+
+        gclient = gnocchi.Client(session=sess)
+        return gclient
+
 
 @configure("ironic", default_version="1", default_service_type="baremetal",
            supported_versions=["1"])
