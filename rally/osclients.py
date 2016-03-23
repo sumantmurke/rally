@@ -152,8 +152,9 @@ class OSClient(plugin.Plugin):
             kc = self.keystone()
             auth = token_endpoint.Token(endpoint, kc.auth_token)
 
-        return ks_session.Session(auth=auth, verify=self.credential.insecure,
-                                  timeout=CONF.openstack_client_http_timeout)
+        return ks_session.Session(
+            auth=auth, verify=not self.credential.insecure,
+            timeout=CONF.openstack_client_http_timeout)
 
     def _get_endpoint(self, service_type=None):
         kc = self.keystone()
@@ -227,8 +228,21 @@ class Keystone(OSClient):
                 ["user_domain_name", "domain_name", "project_domain_name"])
         auth_args = {key: args.get(key) for key in auth_arg_list}
         auth = identity.Password(**auth_args)
-        args["session"] = self._get_session(auth=auth)
-        return client.Client(**args)
+        session = self._get_session(auth=auth)
+        args["session"] = session
+        # NOTE(bigjools): When using sessions, keystoneclient no longer
+        # does any pre-auth and calling client.authenticate() with
+        # sessions is deprecated (it's still possible to call it but if
+        # endpoint is defined it'll crash). We're forcing that pre-auth
+        # here because the use of the service_catalog depends on doing
+        # this. Also note that while the API has got the
+        # endpoints.list() equivalent, there is no service_type in that
+        # list which is why we need to ensure service_catalog is still
+        # present.
+        auth_ref = auth.get_access(session)
+        ks = client.Client(**args)
+        ks.auth_ref = auth_ref
+        return ks
 
     def create_client(self):
         """Return keystone client."""
@@ -239,10 +253,7 @@ class Keystone(OSClient):
         }
         kw = self.credential.to_dict()
         kw.update(new_kw)
-        client = self._create_keystone_client(kw)
-        if client.auth_ref is None:
-            client.authenticate()
-        return client
+        return self._create_keystone_client(kw)
 
 
 @configure("nova", default_version="2", default_service_type="compute")
@@ -413,29 +424,25 @@ class Ceilometer(OSClient):
             **self._get_auth_info(project_name_key="tenant_name"))
         return client
 
+
 @configure("gnocchi", default_service_type="metric", default_version="1")
 class Gnocchi(OSClient):
+
     def create_client(self, version=None, service_type=None):
         """Return gnocchi client."""
-
-        #NOTE(sumantmurke): gnocchiclient requires keystoneauth1 for
+        # NOTE(sumantmurke): gnocchiclient requires keystoneauth1 for
         # authenticating and creating a session. Use V3 keystone endpoint.
+        from gnocchiclient.v1 import client as gnocchi
         from keystoneauth1.identity import v3
         from keystoneauth1 import session
-        from gnocchiclient.v1 import client as gnocchi
-
-        import rpdb2; rpdb2.start_embedded_debugger("sumant")
         auth = v3.Password(auth_url=self.credential.auth_url,
-            username=self.credential.username,
-            password=self.credential.password,
-            user_domain_name=self.credential.user_domain_name,
-            project_name=self.credential.tenant_name,
-            project_domain_id='default')
-        sess = session.Session(auth = auth)
-
+                           username=self.credential.username,
+                           password=self.credential.password,
+                           user_domain_name=self.credential.user_domain_name,
+                           project_name=self.credential.tenant_name,
+                           project_domain_id="default")
+        sess = session.Session(auth=auth)
         gclient = gnocchi.Client(session=sess)
-        #lis = gclient.archive_policy_rule.list()
-        #print lis
         return gclient
 
 
@@ -480,6 +487,7 @@ class Sahara(OSClient):
         client = sahara.Client(
             self.choose_version(version),
             service_type=self.choose_service_type(service_type),
+            insecure=self.credential.insecure,
             **self._get_auth_info(password_key="api_key",
                                   project_name_key="project_name"))
 
