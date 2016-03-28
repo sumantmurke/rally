@@ -160,7 +160,7 @@ class OSClient(plugin.Plugin):
             auth=auth, verify=not self.credential.insecure,
             timeout=CONF.openstack_client_http_timeout)
 
-    def _get_session_keystoneauth1(self):
+    def _get_keystoneauth_session(self):
         from keystoneauth1 import loading
         from keystoneauth1 import session
         print "inside auth"
@@ -476,10 +476,10 @@ class Gnocchi(OSClient):
     def create_client(self, version=None, service_type=None):
         """Return gnocchi client."""
         # NOTE(sumantmurke): gnocchiclient requires keystoneauth1 for
-        # authenticating and creating a session. Use V3 keystone endpoint.
+        # authenticating and creating a session.
         from gnocchiclient import client as gnocchi
         service_type=self.choose_service_type(service_type)
-        sess=self._get_session_keystoneauth1()
+        sess=self._get_keystoneauth_session()
         gclient = gnocchi.Client(version=self.choose_version(version), session=sess, service_type=service_type)
         return gclient
 
