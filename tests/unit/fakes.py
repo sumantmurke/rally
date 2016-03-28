@@ -722,6 +722,7 @@ class FakeRolesManager(FakeManager):
 
 class FakeMetricManager(FakeManager):
 
+    print "inside metric"
     def create(self, **kwargs):
         metric = FakeMetric(self, **kwargs)
         return self._cache(metric)

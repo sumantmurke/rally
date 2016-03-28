@@ -496,7 +496,7 @@ class OSClientsTestCase(test.TestCase):
     def test_gnocchi(self):
         fake_gnocchi = fakes.FakeGnocchiClient()
         mock_gnocchi = mock.MagicMock()
-        mock_gnocchi.client.Client = mock.MagicMock(return_value=fake_gnocchi)
+        mock_gnocchi.client.Client.return_value = fake_gnocchi
         mock_keystoneauth1 = mock.MagicMock()
         self.assertNotIn("gnocchi", self.clients.cache)
         with mock.patch.dict("sys.modules",
